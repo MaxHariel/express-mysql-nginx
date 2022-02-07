@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  express:
+    build:
+      context: ./node
+      dockerfile: Dockerfile.dev
+    container_name: express-app
+    tty: true
+    ports:
+      - 3000:3000
+    entrypoint: .docker/entrypoint.sh
+    volumes:
+      - ./node:/app
+    networks:
+      - node-network
+    depends_on:
+      - db
+
+  db:
+    image: mysql:5.7
+    container_name: db
+    command: --innodb-use-native-aio=0
+    restart: always
+    tty: true
+    volumes:
+      - ./node/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=nodedb
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - node-network
+  nginx:
+    image: nginx
+    container_name: nginx_server
+    ports:
+      - 8080:8080
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile.dev
+    networks:
+      - node-network
+    depends_on:
+      - express
+networks:
+  node-network:
+    driver: bridge
